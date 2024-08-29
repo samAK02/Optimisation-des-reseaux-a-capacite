@@ -1,5 +1,5 @@
 """
-Programme d'optimisation en transports
+Programme d'optimisation en transports 
 
 
 classe:
@@ -29,6 +29,8 @@ import requests
 from collections import deque
 import networkx as nx
 import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import simpledialog, messagebox 
 
 class Graph:
     def __init__(self, N) -> None:
@@ -39,78 +41,47 @@ class Graph:
         self.MSat = np.zeros((N,N))                    # matrice de saturation des arcs
 
     def remp_mat_adj(self):
-        print("\nRemplissage de la matrice d'adjacence (1 pour une connexion, 0 sinon):")
         for i in range(self.N):
             for j in range(self.N):
-                while True:
-                    try:
-                        value = int(input(f"Connexion entre le node {i} et {j} (1/0): "))
-                        if value in [0, 1]:
-                            self.MGraph[i][j] = value
-                            break
-                        else:
-                            print("Valeur invalide. Veuillez entrer 0 ou 1.")
-                    except ValueError:
-                        print("Entrée invalide. Veuillez entrer 0 ou 1.")
+                if i != j:                             # On ne demande pas de saisie pour les diagonales, les boucles ne sont d'aucune utilité au programme
+                    value = simpledialog.askinteger(
+                        "Matrice d'adjacence",
+                        f"Connexion entre le nœud {i} et {j} (1/0):",
+                        minvalue=0, maxvalue=1)
+                    self.MGraph[i][j] = value
 
     def remp_mat_dist(self):
-        print("\nRemplissage de la matrice des distances:")
         for i in range(self.N):
             for j in range(self.N):
-                if i == j:
+                if i != j and self.MGraph[i][j] == 1:
+                    value = simpledialog.askfloat(
+                        "Matrice des distances",
+                        f"Veuillez entrer la distance entre le nœud {i} et {j}:")
+                    self.MDist[i][j] = value
+                elif i == j:
                     self.MDist[i][j] = 0
                 else:
-                    if self.MGraph[i][j] == 1:
-                        while True:
-                            try:
-                                value = float(input(f"Veuillez entrer la distance entre le node {i} et {j}: "))
-                                if value > 0 :
-                                    self.MDist[i][j] = value
-                                    break
-                                else:
-                                    print("Veuillez entrer une valeur qui soit positive")
-                            except ValueError:
-                                print("Entrée invalide. Veuillez entrer une valeur qui soit positive")                       
-                    else:
-                        self.MDist[i][j] = float('inf')
+                    self.MDist[i][j] = float('inf')
 
     def remp_mat_cap(self):
-        print("\nRemplissage de la matrice des capacités:")
         for i in range(self.N):
             for j in range(self.N):
                 if self.MGraph[i][j] == 1:
-                    while True:
-                        try:
-                            value = int(input(f"Capacité entre le nœud {i} et le nœud {j}: "))
-                            if value > 0 :
-                                self.MCap[i][j] = value
-                                break
-                            else:
-                                print("veuillez entrer une valeur de capacité positive")
-                        except ValueError:
-                            print("Entrée invalide. Veuillez entrer une valeur qui soit positive")
-                else:
-                    self.MCap[i][j] = 0
-
+                    value = simpledialog.askinteger(
+                        "Matrice des capacités",
+                        f"Capacité entre le nœud {i} et {j}:")
+                    self.MCap[i][j] = value
 
     def remp_mat_sat(self):
-        print("\nRemplissage de la matrice indiquant la saturation de chaque arc.:")
         for i in range(self.N):
             for j in range(self.N):
                 if self.MGraph[i][j] == 1:
-                    while True:
-                        try:
-                            value = int(input(f"saturation entre le nœud {i} et le nœud {j}: "))
-                            if value >= 0 and value <= self.MCap[i][j]:
-                                self.MSat[i][j] = value
-                                break
-                            else:
-                                print("veuillez entrer une valeur de saturation positive ET qui soit inférieur ou égale à la capacité de l'arc associé")
-                            
-                        except ValueError:
-                            print("Entrée invalide. veuillez entrer une valeur de saturation positive ET qui soit inférieur ou égale à la capacité de l'arc associé")
-                else:
-                    self.MSat[i][j] = 0
+                    value = simpledialog.askinteger(
+                        "Matrice de saturation",
+                        f"Saturation entre le nœud {i} et {j} (Max {self.MCap[i][j]}):",
+                        minvalue=0, maxvalue=self.MCap[i][j])
+                    self.MSat[i][j] = value
+
                 
 
     def update(self):  #ce serait bien d'avoir une API pour trouver les données automatiquement 
@@ -265,54 +236,38 @@ def find_best_path(Graph, start, end):
 
 
 def main():
+    root = tk.Tk()
+    root.withdraw() # on cache la fenêtre principale
 
-    N = None
-    while N is None or N < 0 :
-        try:
-            N = int(input("Veuillez entrer le nombre de nœuds du associés au graph: "))
-            if N < 0 :
-                print("Le nombre de nœuds doit être positive ou nulle, veuillez insérer cette valeur: ")
-        except ValueError:
-            print("Le nombre de nœuds doit être positive ou nulle, veuillez insérer cette valeur:")
-            N = None
+    N = simpledialog.askinteger("Graph", "Veuillez entrer le nombre de nœuds du graph:")
+    if N is None or N <= 0:
+        messagebox.showerror("Erreur", "Le nombre de nœuds doit être positif.")
+        return
 
     graph = Graph(N)
-    
     graph.remp_mat_adj()
     graph.remp_mat_dist()
     graph.remp_mat_cap()
     graph.remp_mat_sat()
 
-    source = None
-    while source is None or not [0, N-1]:
-        try:
-            source = int(input("Veuillez entrer la source (0 à N-1): "))
-            if not 0<= source <= N-1:
-                print(f"Veuillez entrer le nœud associé au départ, tel qu'il soit entre 0 et {N -1}: ")
-        except ValueError:
-            print(f"Veuillez entrer le nœud associé au départ, tel qu'il soit entre 0 et {N -1}: ")
-    
+    source = simpledialog.askinteger("Source", "Veuillez entrer le nœud de départ (0 à N-1):")
+    if source is None or not 0 <= source < N:
+        messagebox.showerror("Erreur", "Le nœud de départ doit être compris entre 0 et N-1.")
+        return
 
-    sink = None
-    while sink is None or not [0, N-1]:
-        try:
-            sink = int(input("Veuillez entrer le sink (0 à N-1): "))
-            if not 0<= source <= N-1:
-                print(f"Veuillez entrer le nœud associé à l'arrivée , tel qu'il soit entre 0 et {N -1}: ")
-        except ValueError:
-            print(f"Veuillez entrer le nœud associé à l'arrivée, tel qu'il soit entre 0 et {N -1}: ")
+    sink = simpledialog.askinteger("Sink", "Veuillez entrer le nœud d'arrivée (0 à N-1):")
+    if sink is None or not 0 <= sink < N:
+        messagebox.showerror("Erreur", "Le nœud d'arrivée doit être compris entre 0 et N-1.")
+        return
 
-
-   
     best_path = find_best_path(graph, source, sink)
 
-    if best_path:
-        print("Le meilleur chemin trouvé est :", best_path)
-       
-        graph.visualize_graph(best_path)
+    if best_path is None:
+        messagebox.showinfo("Aucun Chemin", "Aucun chemin n'a été trouvé entre les nœuds spécifiés.")
     else:
-        print("Aucun chemin trouvé entre la source et le sink.")
-
+        messagebox.showinfo("Meilleur Chemin", f"Le meilleur chemin est: {' -> '.join(map(str, best_path))}")
+        graph.visualize_graph(best_path=best_path)
 
 if __name__ == "__main__":
     main()
+

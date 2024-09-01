@@ -30,7 +30,7 @@ from collections import deque
 import networkx as nx
 import matplotlib.pyplot as plt
 import tkinter as tk
-from tkinter import simpledialog, messagebox 
+from tkinter import simpledialog, messagebox, ttk
 
 class Graph:
     def __init__(self, N) -> None:
@@ -157,12 +157,13 @@ def identifier_goulets(Graph):
     for i in range(Graph.N):
         for j in range(Graph.N):
             if Graph.MGraph[i][j] == 1:
-                capacity = Graph.MCap[i][j] + Graph.MCap[j][i]
-                current_flow = Graph.MCap[j][i]
-                if current_flow >= capacity * 0.8:
+                capacity = Graph.MCap[i][j]
+                current_flow = Graph.MSat[i][j]
+                if current_flow >= capacity * 0.8:  # fication du seuil du goulet d'étranglement
                     goulets.append((i, j, capacity, current_flow))
-
     return goulets
+
+
 
 def dfs_all_paths(graph, source, sink, path, all_paths):
     path.append(source)
@@ -181,10 +182,11 @@ def find_all_paths(Graph, source, sink):
     dfs_all_paths(Graph, source, sink, [], all_paths)
     return all_paths
 
+
+
 def score_path(Graph, path, goulets):
     sum_distance = 0
-    sum_capacities = 0
-    goulets_penality = 0  
+    goulets_penalty = 0  
     sum_ratio_sat = 0
 
     for i in range(len(path)-1):
@@ -193,25 +195,32 @@ def score_path(Graph, path, goulets):
 
         sum_distance += Graph.MDist[u][v]
 
-        for g in goulets:
-            if g[0] == u and g[1] == v:
-                goulets_penality += 1
-                break
         
-        sum_capacities += Graph.MCap[u][v]
-           
+        for g in goulets:                  # Penalité pour les goulets
+            if g[0] == u and g[1] == v:
+                saturation_level = Graph.MSat[u][v] / Graph.MCap[u][v]
+                goulets_penalty += saturation_level
+                break
+
+    
+        
         if Graph.MCap[u][v] != 0:
-            sum_ratio_sat += (Graph.MSat[u][v] / Graph.MGraph[u][v])
+            sum_ratio_sat += (Graph.MSat[u][v] / Graph.MCap[u][v])
         else:
             sum_ratio_sat += float('inf')
                 
+    # normalisation des scores 
+    distance_score = 1 / (1 + sum_distance)  # on inverse parce qu'on veut favoriser le plus petit score
+    goulets_penalty_score = 1 / (1 + goulets_penalty)  # pénalité pour la plus grande saturation 
+    ratio_sat_score = 1 / (1 + sum_ratio_sat)  # pénalité pour le plus grand ratio saturation/capacité
+ 
 
-    distance_score = 1/(1+sum_distance)
-    goulets_penality_score = 1/(1 + goulets_penality)
-    ratio_sat_score = 1/(1+sum_ratio_sat)
-    
-
-    final_score = (distance_score * 0.4) + (ratio_sat_score * 0.4) + (goulets_penality_score * 0.1) + (sum_capacities * 0.1)
+                     # calcul du score final pour le chemin trouvé
+    final_score = (
+        distance_score * 0.5 + 
+        ratio_sat_score * 0.3 + 
+        goulets_penalty_score * 0.2 
+    )
     return final_score
 
 def find_best_path(Graph, start, end):
@@ -236,8 +245,9 @@ def find_best_path(Graph, start, end):
 
 
 def main():
+    
     root = tk.Tk()
-    root.withdraw() # on cache la fenêtre principale
+    root.withdraw() 
 
     N = simpledialog.askinteger("Graph", "Veuillez entrer le nombre de nœuds du graph:")
     if N is None or N <= 0:
@@ -270,4 +280,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
 

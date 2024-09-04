@@ -223,10 +223,93 @@ def score_path(Graph, path, goulets):
     )
     return final_score
 
+#####################################################################################################################
+
+def A_star(Graph, start, end):
+
+
+    # Initialiser les listes de nœuds ouverts et fermés
+    open_set = [start]
+    came_from = {}
+
+    # Initialiser les scores g et f pour tous les nœuds
+    g_score = {}
+    f_score = {}
+
+    for i in range(Graph.N):
+        g_score[i] = float('inf')
+        f_score[i] = float('inf')
+
+    g_score[start] = 0
+    f_score[start] = heuristic(Graph, start, end)
+
+    while len(open_set) > 0:
+        # Trouver le nœud avec le score f le plus bas
+        current = open_set[0]
+        for node in open_set:
+            if f_score[node] < f_score[current]:
+                current = node
+
+        if current == end:
+            return reconstruct_path(came_from, current)
+
+        open_set.remove(current)
+
+        for neighbor in range(Graph.N):
+            if Graph.MGraph[current][neighbor] == 1:
+                tentative_g_score = g_score[current] + Graph.MDist[current][neighbor]
+
+                if tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + heuristic(Graph, neighbor, end)
+
+                    if neighbor not in open_set:
+                        open_set.append(neighbor)
+
+    return None
+
+
+def heuristic(Graph, node, end):
+
+    # Heuristique basée sur la distance et le ratio saturation/capacité
+    distance = Graph.MDist[node][end]
+    
+    if distance == float('inf'):
+        return float('inf')
+    
+    if Graph.MGraph[node][end] == 1 and Graph.MCap[node][end] > 0:
+        sat_ratio = Graph.MSat[node][end] / Graph.MCap[node][end]
+    else:
+        sat_ratio = 0
+
+    penalty_weight = 1.0  
+    heuristic_cost = distance + penalty_weight * sat_ratio * distance
+    
+    return heuristic_cost
+
+def reconstruct_path(came_from, current):
+    path = [current]
+    while current in came_from:
+        current = came_from[current]
+        path.append(current)
+    path.reverse()
+    return path
+
+
+
+# #####################################################################################################################
+
 def find_best_path(Graph, start, end):
+
+
     if Graph is None or Graph.N == 0:
         return None
     
+    if Graph.N > 10:
+        print("Nous allons utiliser la méthode approchée avec A*")
+        return A_star(Graph, start, end )
+
     all_paths = find_all_paths(Graph, start, end)
     if not all_paths:
         return None

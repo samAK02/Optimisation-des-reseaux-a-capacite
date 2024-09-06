@@ -23,7 +23,7 @@ classe:
 
 
 """
-
+import os
 import numpy as np
 import requests
 from collections import deque
@@ -31,6 +31,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import simpledialog, messagebox, ttk
+import csv
 
 class Graph:
     def __init__(self, N) -> None:
@@ -82,8 +83,39 @@ class Graph:
                         minvalue=0, maxvalue=self.MCap[i][j])
                     self.MSat[i][j] = value
 
-                
 
+#############################################################################################################################################################################################
+
+    def charger_données_fichier(self, fichier):
+            try:
+                with open(fichier, 'r') as f:
+                    reader = csv.reader(f)
+                    next(reader)  # Ignore la première ligne d'en-têtes
+                    
+                    for row in reader:
+                        if len(row) != 5:
+                            raise ValueError("Format incorrect dans le fichier")
+                        
+                        node1, node2, dist, cap, sat = map(float, row)
+                        node1, node2 = int(node1), int(node2)
+                        self.MGraph[node1][node2] = 1
+                        self.MDist[node1][node2] = dist
+                        self.MCap[node1][node2] = cap
+                        self.MSat[node1][node2] = sat
+            except Exception as e:
+                print(f"Erreur lors du chargement des données: {e}")
+
+
+
+    def verifier_et_charger_fichier(self):
+        fichier = simpledialog.askstring("Fichier", "Veuillez entrer le nom du fichier (avec extension) contenant les matrices :")
+        if fichier and os.path.exists(fichier):
+            self.charger_données_fichier(fichier)
+            return True
+        return False
+                
+#######################################################################################################################################################################################
+   
     def update(self):  #ce serait bien d'avoir une API pour trouver les données automatiquement 
         url = "exemple d'url récup avec une API"
         try:
@@ -332,16 +364,20 @@ def main():
     root = tk.Tk()
     root.withdraw() 
 
+
     N = simpledialog.askinteger("Graph", "Veuillez entrer le nombre de nœuds du graph:")
     if N is None or N <= 0:
         messagebox.showerror("Erreur", "Le nombre de nœuds doit être positif.")
         return
+    
+    
+    graphe = Graph(N)
 
-    graph = Graph(N)
-    graph.remp_mat_adj()
-    graph.remp_mat_dist()
-    graph.remp_mat_cap()
-    graph.remp_mat_sat()
+    if not graphe.verifier_et_charger_fichier():  
+        graphe.remp_mat_adj()
+        graphe.remp_mat_dist()
+        graphe.remp_mat_cap()
+        graphe.remp_mat_sat()
 
     source = simpledialog.askinteger("Source", "Veuillez entrer le nœud de départ (0 à N-1):")
     if source is None or not 0 <= source < N:
@@ -353,17 +389,16 @@ def main():
         messagebox.showerror("Erreur", "Le nœud d'arrivée doit être compris entre 0 et N-1.")
         return
 
-    best_path = find_best_path(graph, source, sink)
+    best_path = find_best_path(graphe, source, sink)
 
     if best_path is None:
         messagebox.showinfo("Aucun Chemin", "Aucun chemin n'a été trouvé entre les nœuds spécifiés.")
     else:
         messagebox.showinfo("Meilleur Chemin", f"Le meilleur chemin est: {' -> '.join(map(str, best_path))}")
-        graph.visualize_graph(best_path=best_path)
+        graphe.visualize_graph(best_path=best_path)
 
 if __name__ == "__main__":
     main()
-
 
 
 

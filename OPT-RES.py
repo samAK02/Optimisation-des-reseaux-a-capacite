@@ -1,28 +1,3 @@
-"""
-Programme d'optimisation en transports 
-
-
-classe:
--Graph: modélisation d'un graph orienté pondéré et à capacité symbolisant : les nœuds, les connexions, la capacité et saturation de chaque arc
-
--Méthodes:
-
- . remplissage du graph avec les fonctions remp_mat_adj() , remp_mat_dist() , remp_mat_cap et remp_mat_sat()
- . Mise à jour du jour (il faudrait une API qui nous donne les données en temps réel, à implémenter) avec la fonction update()
- . ajustement du flow en orientant vers un arc pas saturé et gérant la capacité avec la fonction adjust_flow()
- . visualisation du graph en nous montrons le chemin optimal via la méthode visualize_graph()
-
--Fonctions:
- 
- . identifications des goulets d'étranglements avec la fonction identifier_goulet()
- . trouver tous les chemins possibles d'un nœud X et Y via la fonction find_all_path()
- . calcul du score de chaque chemin en fonction de la distance, du ratio saturation/ capacité, si la route contient des goulets avec la fonction score_path() 
- . classe les chemins selon leur score et nous donne le meilleur avec la fonction find_best_path()
- . fonction main() qui permet à l'utilisateur d'entrer les données 
-
-
-
-"""
 import os
 import numpy as np
 import requests
@@ -102,7 +77,7 @@ class Graph:
                         self.MDist[node1][node2] = dist
                         self.MCap[node1][node2] = cap
                         self.MSat[node1][node2] = sat
-            except Exception as e:
+            except Exception as e:  
                 print(f"Erreur lors du chargement des données: {e}")
 
 
@@ -249,9 +224,9 @@ def score_path(Graph, path, goulets):
 
                      # calcul du score final pour le chemin trouvé
     final_score = (
-        distance_score * 0.5 + 
-        ratio_sat_score * 0.3 + 
-        goulets_penalty_score * 0.2 
+        distance_score * 0.4 + 
+        ratio_sat_score * 0.5 + 
+        goulets_penalty_score * 0.1 
     )
     return final_score
 
@@ -303,21 +278,19 @@ def A_star(Graph, start, end):
 
 
 def heuristic(Graph, node, end):
-
-    # Heuristique basée sur la distance et le ratio saturation/capacité
     distance = Graph.MDist[node][end]
-    
+
     if distance == float('inf'):
         return float('inf')
-    
+
     if Graph.MGraph[node][end] == 1 and Graph.MCap[node][end] > 0:
         sat_ratio = Graph.MSat[node][end] / Graph.MCap[node][end]
     else:
         sat_ratio = 0
 
-    penalty_weight = 1.0  
+    penalty_weight = 1.0
     heuristic_cost = distance + penalty_weight * sat_ratio * distance
-    
+
     return heuristic_cost
 
 def reconstruct_path(came_from, current):

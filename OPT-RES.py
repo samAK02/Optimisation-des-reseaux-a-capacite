@@ -275,11 +275,8 @@ def main():
     else:
         messagebox.showinfo("A*", "Pas de chemin A*.")
     path_d, cost_d = find_best_path_dijkstra(graph, src, snk)
-    #if path_d:
-        #messagebox.showinfo("Dijkstra", f"Chemin Dijkstra : {' -> '.join(map(str,path_d))}\nCoût : {cost_d}")
-    #else:
-        #messagebox.showinfo("Dijkstra", "Pas de chemin Dijkstra.")
-    graph.visualize_graph(best_path=path_a )#or path_d)
+
+    graph.visualize_graph(best_path=path_a )
 
 if __name__ == '__main__':
     main()

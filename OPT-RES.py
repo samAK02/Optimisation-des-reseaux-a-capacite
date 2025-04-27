@@ -135,6 +135,8 @@ def compute_cost_matrix(graph, w_dist=0.4, w_sat=0.6):
 
 
 def compute_heuristic(graph, goal):
+
+    cost = compute_cost_matrix(graph, 0.4, 0.6)
     N = graph.N
     dist = [float('inf')]*N
     dist[goal] = 0
@@ -143,9 +145,10 @@ def compute_heuristic(graph, goal):
         u = min((d,i) for i,d in enumerate(dist) if not visited[i])[1]
         visited[u] = True
         for v in range(N):
-            if graph.MGraph[v][u] == 1:
-                alt = dist[u] + graph.MDist[v][u]
-                if alt < dist[v]: dist[v] = alt
+            if cost[v][u] < float('inf') :
+                alt = dist[u] + cost[v][u]
+                if alt < dist[v]: 
+                    dist[v] = alt
     return dist
 
 #########################
@@ -275,8 +278,11 @@ def main():
     else:
         messagebox.showinfo("A*", "Pas de chemin A*.")
     path_d, cost_d = find_best_path_dijkstra(graph, src, snk)
-
-    graph.visualize_graph(best_path=path_a )
+    #if path_d:
+        #messagebox.showinfo("Dijkstra", f"Chemin Dijkstra : {' -> '.join(map(str,path_d))}\nCoût : {cost_d}")
+    #else:
+        #messagebox.showinfo("Dijkstra", "Pas de chemin Dijkstra.")
+    graph.visualize_graph(best_path=path_a )#or path_d)
 
 if __name__ == '__main__':
     main()

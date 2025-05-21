@@ -39,7 +39,6 @@ Cette classe représente le graphe du réseau routier. Elle utilise des matrices
 #  Programme de test de performances "tests.py" 
 
 ## Aperçu
----
 Ce programme permet de tester différents aspects du programme tels que l'activation de la gestion d'imprévus et permet de calculer le taux de performances du programme.
 (il y aura dans cette partie uniquement les fonctions qui ne sont pas disponibles dans le fichier du code principal).
 ---

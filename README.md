@@ -1,9 +1,9 @@
-# Programme d'Optimisation de Trafic Routier
+# Programme d'Optimisation dans les réseaux à capacité
 
 
 
 ## Aperçu
-Ce programme modélise un réseau routier sous forme de graphe orienté pondéré, en utilisant des matrices pour les connexions, les distances, les capacités, et la saturation des arcs. Il permet d'optimiser la gestion du trafic en trouvant les meilleurs chemins.
+Ce programme modélise un réseau routier sous forme de graphe orienté pondéré, en utilisant des matrices pour les connexions, les distances, les capacités, et la saturation des arcs. Il permet d'optimiser la gestion du trafic tout en prennant en compte une gestion d'imprévus.
 
 
 
@@ -20,43 +20,39 @@ Cette classe représente le graphe du réseau routier. Elle utilise des matrices
 - **`remp_mat_sat()`** : Remplit la matrice de saturation (`MSat`) des arcs.
 - **`charger_données_fichier(fichier)`** : Charge les données des matrices depuis un fichier CSV.
 - **`verifier_et_charger_fichier()`** : Vérifie l'existence d'un fichier et charge les données s'il existe.
-- **`update()`** : Met à jour dynamiquement les capacités des arcs en récupérant les données d'une API.
-- **`adjust_flow(node, flow)`** : Ajuste le flot dans le réseau en réduisant la capacité résiduelle des arcs.
-- **`display_matrices()`** : Affiche les matrices `MGraph`, `MDist`, et `MCap` dans la console.
 - **`visualize_graph(best_path=None)`** : Visualise le graphe et met en évidence le meilleur chemin si fourni.
 
-### Fonctions Utilitaires
-- **`identifier_goulets(Graph)`** : Identifie les goulets d'étranglement, c'est-à-dire les arcs avec un niveau de saturation élevé.
-- **`dfs_all_paths(graph, source, sink, path, all_paths)`** : Explore tous les chemins possibles entre deux nœuds dans le graphe.
-- **`find_all_paths(Graph, source, sink)`** : Trouve tous les chemins entre deux nœuds donnés.
-- **`score_path(Graph, path, goulets)`** : Calcule un score pour un chemin en fonction des distances, des goulets et des ratios saturation/capacité.
-- **`A_star(Graph, start, end)`** : Utilise l'algorithme A* pour trouver le meilleur chemin entre deux nœuds.
-- **`heuristic(Graph, node, end)`** : Calcule le coût heuristique basé sur la distance et le ratio saturation/capacité.
-- **`reconstruct_path(came_from, current)`** : Reconstruit le chemin trouvé par l'algorithme A*.
-- **`find_best_path(Graph, start, end)`** : Trouve le meilleur chemin en utilisant soit l'algorithme A* pour les grands graphes, soit une recherche exhaustive pour les plus petits graphes.
+### Fonctions d'optimisation
 
-#  Programme de test de performances "LP_tests.py" 
+- **`compute_cost_matrix(graph, w_dist=0.4, w_sat=0.6)`** : Cette fonction permet de fusionner toutes les matrices de la classe *Graph* afin de pouvoir utiliser les algorithmes qui prennent en compte qu'un seul paramètre.
+- **`compute_heuristic(graph, goal)`** : Sert d’heuristique admissible pour A*, lance l'algorithme de *Dijkstra* à partir du sommet final sur la matrice de coûts et Renvoie un tableau dist[] où dist[i] est la distance minimale de i jusqu’à goal.
+- **`find_best_path_astar(graph, start, goal, w_dist=0.4, w_sat=0.6)`** : Calcule l’heuristique via compute_heuristic et renvoie la liste de nœuds du chemin, ou "None" si aucun chemin n'est trouvé.
+
+
+### Fonctions de gestion d'imprévus
+- **`mise_à_jour(Graph)`** : Pour chaque arc, modifie aléatoirement la saturation de +10% ou -10%, chaque ajout est bornée entre 0 et la capacité.
+- **`gestion_imprevu(Graph, bestPath, start, goal, k)`** : Appelle la fonction `mise_à_jour()` et si un arc du chemin optimal est saturé à plus de 70% :génère k chemins avec `find_best_path_astar()` et en renvoie un aléatoirement parmis les k. Sinon renvoie *best_path* ou "None".
+- **`activation_imprévu(Graph, best_path)`** : Choisit aléatoirement un arc de bestPath (sauf le dernier) et force sa saturation à la capacité maximale.
+
+
+
+#  Programme de test de performances "tests.py" 
 
 ## Aperçu
 
-Ce programme optimise un problème de gestion du trafic routier en utilisant la programmation linéaire pour minimiser un coût global, basé sur la distance et le ratio saturation/capacité des routes dans un réseau donné. Le réseau est défini par un fichier CSV d'arêtes entre nœuds, contenant des informations sur les distances, capacités, et saturations des arcs. Le programme trouve une solution qui minimise le coût total du trafic tout en respectant les contraintes de flux entre les nœuds.
-
+Ce programme permet de tester différents aspects du programme tels que l'activation de la gestion d'imprévus et permet de calculer le taux de performances du programme.
+(il y aura dans cette partie uniquement les fonctions qui ne sont pas disponibles dans le fichier du code principal).
 ---
 
 ## Fonctions
 
 
-- **`read_graph_from_csv(file_name)`** : Cette fonction lit un fichier CSV contenant les arêtes du graphe et extrait les informations de distance, capacité, et saturation pour chaque route. Elle permet de construire la liste des arcs du réseau à partir d'un fichier CSV.
+- **`find_best_path_dijkstra(G, start, goal, w_dist=0.4, w_sat=0.6):`** : Cette fonctionpermet de trouver le chemn optimal en utilisant l'algorithme de *Dijkstra* et nous renvoie le chemin optimal ainsi que le coût calculé.
+- **`test_temps_calcul()`** : Crée des graphes aléatoires de tailles (N = 10, 50, 100, …), hronomètre `find_best_path_astar` pour chaque N et Affiche l’évolution du temps en fonction de N.
+- **`main()`** : propose à l'utilisateur de choisir le type de test qu'il veut effectuer. 
 
-### 
-- **`solve_linear_program(edges)`** : Résout un problème de programmation linéaire pour minimiser un coût lié à la distance et à la saturation des routes dans un graphe orienté.Cette fonction trouve la solution optimale en minimisant le coût de trafic tout en respectant les contraintes de flux (entrée et sortie de chaque nœud).
 
 
----
 
-## Utilité des fonctions
-
-- **`read_graph_from_csv`** : Importer les données de trafic depuis un fichier CSV.
-- **`solve_linear_program`** : Optimiser les flux de trafic en minimisant les coûts liés à la distance et à la saturation des routes.
 
 

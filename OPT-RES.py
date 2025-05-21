@@ -7,9 +7,9 @@ from tkinter import simpledialog, messagebox
 import csv
 import random 
 
-#########################
-# Classe Graph avec chargement CSV ou saisie manuelle
-#########################
+
+# Classe Graph 
+
 class Graph:
     def __init__(self) -> None:
         self.N = None
@@ -120,9 +120,9 @@ class Graph:
         plt.title("Graph Visualization")
         plt.show()
 
-#########################
-# Fonctions de calcul (coût & heuristique)
-#########################
+
+# Fonctions de calcul 
+
 def compute_cost_matrix(graph, w_dist=0.4, w_sat=0.6):
     N = graph.N
     cost = np.full((N, N), float('inf'))
@@ -151,9 +151,9 @@ def compute_heuristic(graph, goal):
                     dist[v] = alt
     return dist
 
-#########################
-# A* et Dijkstra sur matrice de coûts
-#########################
+
+# A* 
+
 def find_best_path_astar(graph, start, goal, w_dist=0.4, w_sat=0.6):
     cost = compute_cost_matrix(graph, w_dist, w_sat)
     G = nx.DiGraph()
@@ -169,30 +169,9 @@ def find_best_path_astar(graph, start, goal, w_dist=0.4, w_sat=0.6):
         return None
 
 
-def find_best_path_dijkstra(graph, start, goal, w_dist=0.4, w_sat=0.6):
-    cost = compute_cost_matrix(graph, w_dist, w_sat)
-    N = graph.N
-    dist = [float('inf')]*N
-    prev = [None]*N
-    dist[start] = 0
-    visited = [False]*N
-    for _ in range(N):
-        u = min((d,i) for i,d in enumerate(dist) if not visited[i])[1]
-        visited[u] = True
-        for v in range(N):
-            if cost[u][v] < float('inf'):
-                alt = dist[u] + cost[u][v]
-                if alt < dist[v]: dist[v], prev[v] = alt, u
-    path = []
-    u = goal
-    while u is not None:
-        path.insert(0, u)
-        u = prev[u]
-    return path, dist[goal]
 
-#########################
-# Fonctions de gestion d'imprévus et sabotage
-#########################
+#Fonctions de gestion d'imprévus et sabotage
+
 def mise_à_jour(Graph):
     """
     Simule une mise à jour aléatoire, imitant par exemple des données GPS.
@@ -206,12 +185,7 @@ def mise_à_jour(Graph):
                 Graph.MSat[i][j] = nouvelle_sat
 
 def gestion_imprevu(Graph, bestPath, start, goal, k):
-    """
-    Gère un imprévu : si sur le meilleur chemin actuel (bestPath)
-    un arc est saturé à plus de 70% de sa capacité, on cherche
-    K nouveaux chemins alternatifs via ACO_A_star et on pénalise
-    les arcs utilisés pour favoriser l'exploration d'autres routes.
-    """
+
     mise_à_jour(Graph)
     trigger_imprevu = False
     for idx in range(len(bestPath) - 1):
@@ -238,7 +212,7 @@ def gestion_imprevu(Graph, bestPath, start, goal, k):
     else:
         return None
 
-def sabotage(Graph, bestPath):
+def activation_imprevu(Graph, bestPath):
     """
     Fonction de sabotage utilisée pour tester la gestion d'imprévus.
     Choisit un arc aléatoire (sauf le dernier) dans bestPath et force sa saturation.
@@ -250,14 +224,12 @@ def sabotage(Graph, bestPath):
     v = bestPath[idx + 1]
     Graph.MSat[u][v] = Graph.MCap[u][v]
 
-#########################
-# Mode interactif (CSV ou manuel)
-#########################
+
 def main():
     root = tk.Tk(); root.withdraw()
     graph = Graph()
     if not graph.verifier_et_charger_fichier():
-        # saisie manuelle
+        # Afin de saisir manuellent
         N = simpledialog.askinteger("Graph", "Nombre de nœuds :")
         if N is None or N <= 0:
             messagebox.showerror("Erreur", "N doit être positif.")
@@ -277,12 +249,8 @@ def main():
         messagebox.showinfo("A*", "Chemin A* : " + ' -> '.join(map(str,path_a)))
     else:
         messagebox.showinfo("A*", "Pas de chemin A*.")
-    path_d, cost_d = find_best_path_dijkstra(graph, src, snk)
-    #if path_d:
-        #messagebox.showinfo("Dijkstra", f"Chemin Dijkstra : {' -> '.join(map(str,path_d))}\nCoût : {cost_d}")
-    #else:
-        #messagebox.showinfo("Dijkstra", "Pas de chemin Dijkstra.")
-    graph.visualize_graph(best_path=path_a )#or path_d)
+
+    graph.visualize_graph(best_path=path_a )
 
 if __name__ == '__main__':
     main()

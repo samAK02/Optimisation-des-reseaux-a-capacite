@@ -8,7 +8,7 @@ import csv
 import random
 
 class Graph:
-    """Représente un graphe orienté avec matrices d'adjacence, de distances, de capacités et de saturation."""
+  
     def __init__(self):
         self.N = 0
         self.MGraph = None
@@ -25,7 +25,7 @@ class Graph:
         self.MSat   = np.zeros((N, N), dtype=float)
 
     def remp_mat_adj(self):
-        """Remplit la matrice d'adjacence par saisie utilisateur."""
+
         for i in range(self.N):
             for j in range(self.N):
                 if i != j:
@@ -42,7 +42,7 @@ class Graph:
                         break
 
     def remp_mat_dist(self):
-        """Remplit la matrice des distances par saisie utilisateur."""
+       
         for i in range(self.N):
             for j in range(self.N):
                 if i == j:
@@ -61,7 +61,7 @@ class Graph:
                     self.MDist[i][j] = np.inf
 
     def remp_mat_cap(self):
-        """Remplit la matrice des capacités par saisie utilisateur."""
+
         for i in range(self.N):
             for j in range(self.N):
                 if self.MGraph[i][j] == 1:
@@ -77,7 +77,7 @@ class Graph:
                         break
 
     def remp_mat_sat(self):
-        """Remplit la matrice de saturation par saisie utilisateur."""
+       
         for i in range(self.N):
             for j in range(self.N):
                 if self.MGraph[i][j] == 1:
@@ -94,7 +94,7 @@ class Graph:
                         break
 
     def charger_donnees_fichier(self, fichier):
-        """Charge les données depuis un fichier CSV déjà validé."""
+ 
         try:
             with open(fichier, 'r', newline='') as f:
                 reader = csv.reader(f)
@@ -113,7 +113,7 @@ class Graph:
             raise
 
     def verifier_et_charger_fichier(self):
-        """Demande le nom de fichier CSV, initialise les matrices et charge les données s'il existe."""
+      
         fichier = simpledialog.askstring(
             "Fichier CSV",
             "Nom du fichier CSV (laisser vide pour saisie manuelle):")
@@ -134,7 +134,7 @@ class Graph:
         return False
 
 def compute_cost_matrix(G, w_dist=0.4, w_sat=0.6):
-    """Calcule la matrice des coûts selon distance et saturation."""
+
     N = G.N
     cost = np.full((N, N), np.inf)
     for u in range(N):
@@ -146,23 +146,25 @@ def compute_cost_matrix(G, w_dist=0.4, w_sat=0.6):
 
 
 def compute_heuristic_array(G, goal):
-    """Calcule l'heuristique (distance minimale inversée) pour A*."""
+   
+    cost = compute_cost_matrix(G, 0.4, 0.6)
     N = G.N
-    dist = [np.inf]*N
+    dist = [float('inf')]*N
     dist[goal] = 0
     visited = [False]*N
     for _ in range(N):
         u = min((d,i) for i,d in enumerate(dist) if not visited[i])[1]
         visited[u] = True
         for v in range(N):
-            if G.MGraph[v][u]==1:
-                alt = dist[u]+G.MDist[v][u]
-                if alt<dist[v]: dist[v]=alt
+            if cost[v][u] < float('inf') :
+                alt = dist[u] + cost[v][u]
+                if alt < dist[v]: 
+                    dist[v] = alt
     return dist
 
 
 def find_best_path_astar(G, start, goal, w_dist=0.4, w_sat=0.6):
-    """Retourne le chemin et son coût via A* sur la matrice des coûts."""
+   
     cost = compute_cost_matrix(G, w_dist, w_sat)
     NXG = nx.DiGraph()
     NXG.add_nodes_from(range(G.N))
@@ -181,7 +183,7 @@ def find_best_path_astar(G, start, goal, w_dist=0.4, w_sat=0.6):
 
 
 def find_best_path_dijkstra(G, start, goal, w_dist=0.4, w_sat=0.6):
-    """Retourne le chemin et coût via Dijkstra sur la matrice des coûts."""
+   
     cost = compute_cost_matrix(G, w_dist, w_sat)
     N = G.N
     dist = [np.inf]*N
@@ -212,8 +214,8 @@ def mise_a_jour(G):
                 G.MSat[i][j] = max(0, min(new_sat, G.MCap[i][j]))
 
 
-def sabotage(G, best_path):
-    """Simule un sabotage en saturant et désactivant un arc du chemin."""
+def activation_imprévu(G, best_path):
+    
     if not best_path or len(best_path)<2: return None,None,None
     idx = random.randrange(len(best_path)-1)
     u,v = best_path[idx], best_path[idx+1]
@@ -222,15 +224,71 @@ def sabotage(G, best_path):
     G.MDist[u][v] = np.inf
     return idx, u, v
 
+import time
 
-def main_interactive():
-    """Lance l'application interactive avec Tkinter."""
-    root = tk.Tk(); root.withdraw()
-    graph = Graph()
+def test_temps_calcul():
+    
+    Ns = [10, 50, 100, 200, 400, 800]
+    temps = []
+    for N in Ns:
+        # Génération aléatoire d'un graphe creux
+        G = Graph()
+        G._init_matrices(N)
+        p = 0.1
+        for i in range(N):
+            for j in range(N):
+                if i != j and random.random() < p:
+                    G.MGraph[i][j] = 1
+                    G.MDist[i][j] = random.uniform(1, 10)
+                    cap = random.randint(1, 20)
+                    G.MCap[i][j] = cap
+                    G.MSat[i][j] = random.uniform(0, cap)
+                else:
+                    G.MGraph[i][j] = 0
+                    G.MDist[i][j] = np.inf
+        start, goal = 0, N - 1
+        t0 = time.perf_counter()
+        _path, _cost = find_best_path_astar(G, start, goal)
+        t1 = time.perf_counter()
+        temps.append(t1 - t0)
+
+    plt.figure()
+    plt.plot(Ns, temps, marker='o')
+    plt.xlabel("Nombre de sommets")
+    plt.ylabel("Temps de calcul (s)")
+    plt.title("Performance de A* selon N")
+    plt.grid(True)
+    plt.show()
+
+
+
+def main():
+    """Lance l'application interactive avec choix du mode."""
+    root = tk.Tk()
+    root.withdraw()
     try:
+        # Proposition de menu 
+        choice = simpledialog.askinteger(
+            "Choix du mode",
+            "Tapez :\n"
+            "1 pour test de temps de calcul\n"
+            "2 pour A* interactif avec gestion d'imprévu\n"
+            "3 pour comparer A* vs Dijkstra",
+            minvalue=1, maxvalue=3
+        )
+        if choice is None:
+            messagebox.showinfo("Annulé", "Aucune option sélectionnée.")
+            return
+
+        if choice == 1:
+            test_temps_calcul()
+            return
+
+    
+        graph = Graph()
         if not graph.verifier_et_charger_fichier():
             N = simpledialog.askinteger("Graph", "Nombre de nœuds :")
-            if N is None or N<=0:
+            if N is None or N <= 0:
                 messagebox.showerror("Erreur","N doit être un entier positif.")
                 return
             graph._init_matrices(N)
@@ -238,40 +296,77 @@ def main_interactive():
             graph.remp_mat_dist()
             graph.remp_mat_cap()
             graph.remp_mat_sat()
+
         src = simpledialog.askinteger("Source","Nœud départ (0..N-1):")
         sink = simpledialog.askinteger("Sink","Nœud arrivée (0..N-1):")
-        if src is None or sink is None or not(0<=src<graph.N and 0<=sink<graph.N):
+        if src is None or sink is None or not (0 <= src < graph.N and 0 <= sink < graph.N):
             messagebox.showerror("Erreur","Indices invalides.")
             return
+
+        # Option 3 : comparaison entre  A* et Dijkstra
+        if choice == 3:
+            path_astar, cost_astar = find_best_path_astar(graph, src, sink)
+            path_dijk, cost_dijk   = find_best_path_dijkstra(graph, src, sink)
+            if not path_astar and not path_dijk:
+                messagebox.showinfo("Comparaison",
+                                    "Aucun chemin trouvé par A* ni par Dijkstra.")
+                return
+
+           
+            msg = ""
+            if path_astar:
+                msg += f"A* → {' -> '.join(map(str, path_astar))} (coût={cost_astar:.2f})\n"
+            else:
+                msg += "A* → Aucun chemin trouvé\n"
+            if path_dijk:
+                msg += f"Dijkstra → {' -> '.join(map(str, path_dijk))} (coût={cost_dijk:.2f})"
+            else:
+                msg += "Dijkstra → Aucun chemin trouvé"
+
+            messagebox.showinfo("Comparaison A* vs Dijkstra", msg)
+            return
+
+        # Option 2 : mode A* interactif avec la fonction activation_imprévu
         path, cost = find_best_path_astar(graph, src, sink)
         if not path:
             messagebox.showinfo("A*","Aucun chemin trouvé.")
             return
-        messagebox.showinfo("A*",f"Chemin initial A* : {' -> '.join(map(str,path))} (coût={cost:.2f})")
-        idx,u,v = sabotage(graph,path)
-        final_path = path
+        messagebox.showinfo(
+            "A*",
+            f"Chemin initial A* : {' -> '.join(map(str, path))} (coût={cost:.2f})"
+        )
+
+        idx, u, v = activation_imprévu(graph, path)
         if idx is not None:
             reroute_idx = random.randint(0, idx)
             reroute_node = path[reroute_idx]
-            messagebox.showwarning("Imprévu",f"Problème sur l'arc {u}->{v}. Recalcul à partir du nœud {reroute_node}.")
-            k=3; alternatives=[]
+            messagebox.showwarning(
+                "Imprévu",
+                f"Problème sur l'arc {u}->{v}. Recalcul à partir du nœud {reroute_node}."
+            )
+            k = 3
+            alternatives = []
             for _ in range(k):
-                seg,_ = find_best_path_astar(graph, reroute_node, sink)
+                seg, _ = find_best_path_astar(graph, reroute_node, sink)
                 if seg:
                     alternatives.append(seg)
-                    for a,b in zip(seg,seg[1:]): graph.MDist[a][b]=np.inf
+                    for a, b in zip(seg, seg[1:]):
+                        graph.MDist[a][b] = np.inf
             if alternatives:
                 chosen = random.choice(alternatives)
                 final_path = path[:reroute_idx] + chosen
-                messagebox.showinfo("Chemin recalculé","Nouveau chemin : "+' -> '.join(map(str,final_path)))
+                messagebox.showinfo(
+                    "Chemin recalculé",
+                    "Nouveau chemin : " + ' -> '.join(map(str, final_path))
+                )
             else:
                 messagebox.showinfo("Recalcule","Aucune alternative trouvée.")
+
     except KeyboardInterrupt:
         messagebox.showinfo("Annulé","Exécution interrompue par l'utilisateur.")
     finally:
         root.destroy()
 
 
-
 if __name__ == '__main__':
-    main_interactive()
+    main()
